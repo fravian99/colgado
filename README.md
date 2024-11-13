@@ -16,11 +16,6 @@ If you already have the executable, you can skip this step and go directly to th
 cargo build --release
 ```
 4. Go to the `target/release` directory, the executable is called `colgado` if you're on Linux or `colgado.exe` on Windows.
-```
-
-
-
-
 
 ### Creating a Twitch App
 
