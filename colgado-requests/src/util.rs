@@ -62,10 +62,13 @@ mod tests {
 
     #[tokio::test]
     async fn check_tcp_address() {
-        let address = tcp_addres("http://localhost/probando-para-que-no-se-vea").await;
+        let address = tcp_addres("http://localhost:3000/probando-para-que-no-se-vea").await;
         if let Err(address) = &address {
             println!("Error: {}", address);
         }
-        assert!(address.is_ok())
+        assert!(address.is_ok());
+        if let Ok(address) = address {
+            assert_eq!("127.0.0.1:3000", address.to_string());
+        }
     }
 }
