@@ -167,12 +167,13 @@ impl ColgadoApp {
         Task::none()
     }
 
-    fn send_messages(&self, word: Vec<String>) -> Task<Message> {
+    fn send_messages(&self, words: Vec<String>) -> Task<Message> {
         if let Some(handles) = &self.handles {
             let game_handle = handles.game_handle.clone();
-            return Task::perform(async move { game_handle.send_messages(word).await }, |_| {
-                Message::GetActualState
-            });
+            return Task::perform(
+                async move { game_handle.send_messages(words).await },
+                |_| Message::GetActualState,
+            );
         }
         Task::none()
     }

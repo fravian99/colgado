@@ -12,9 +12,9 @@ If you already have the executable, you can skip this step and go directly to th
 1. Clone the repository (If you don't have git installed, press the "Code" button and "Download ZIP")
 2. Install Rust, follow the official installation guide https://www.rust-lang.org/tools/install .
 3. Compile the program, open the command console and execute the following command:
-```bash
-cargo build --release
-```
+    ```bash
+    cargo build --release
+    ```
 4. Go to the `target/release` directory, the executable is called `colgado` if you're on Linux or `colgado.exe` on Windows.
 
 ### Creating a Twitch App

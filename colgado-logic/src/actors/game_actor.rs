@@ -128,7 +128,7 @@ pub struct TwitchGameHandle {
 }
 
 impl TwitchGameHandle {
-    pub fn new(
+    pub fn new_and_joinhandle(
         user_info: info::User,
         bot_info: info::Bot,
         command: String,

@@ -16,11 +16,16 @@ use tokio_tungstenite::connect_async;
 
 pub async fn init_flow() -> Result<(Handles, Arc<[JoinHandle<()>]>), ColgadoLogicError> {
     let (user, bot_info, command) = colgado_requests::get_token().await?;
-    let (twitch_game_handle, twitch_game_task) = TwitchGameHandle::new(user, bot_info, command);
+
+    let (twitch_game_handle, twitch_game_task) =
+        TwitchGameHandle::new_and_joinhandle(user, bot_info, command);
+
     let (ws_stream, _) = connect_async(URL).await.expect("Failed to connect");
     println!("WebSocket handshake has been successfully completed");
+
     let (twitch_message_handle, twitch_message_task) =
-        TwitchMessageHandle::new(ws_stream, twitch_game_handle.clone());
+        TwitchMessageHandle::new_and_joinhandle(ws_stream, twitch_game_handle.clone());
+
     let handles = Handles {
         message_handle: twitch_message_handle,
         game_handle: twitch_game_handle,

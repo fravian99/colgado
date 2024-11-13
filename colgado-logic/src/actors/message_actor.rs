@@ -60,7 +60,7 @@ pub struct TwitchMessageHandle {
 }
 
 impl TwitchMessageHandle {
-    pub fn new(
+    pub fn new_and_joinhandle(
         ws_stream: WebSocket,
         handle: TwitchGameHandle,
     ) -> (Self, tokio::task::JoinHandle<()>) {
