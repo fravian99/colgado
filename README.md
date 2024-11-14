@@ -28,9 +28,18 @@ Click the "Manage" button of your bot; on this screen, you'll see the client ID 
 
 In the same directory from which we run the game, we create the following file, naming it "env.toml", keeping in mind that "toml" is the extension:
 
+```toml
+client-id = "h8h9gg6gu59m0187lvgy01x6teinig"
+redirect-urls = [
+    "http://localhost:3000/esto-es-un-texto-muy-largo-para-que-no-se-vea-el-access-token-que-en-el-caso-de-que-estes-enseñando-el-navegador-en-directo-seria-un-gran-problema-por-favor-ten-cuidado",
+    "http://localhost:1234/esto-es-un-texto-muy-largo-para-que-no-se-vea-el-access-token-que-en-el-caso-de-que-estes-enseñando-el-navegador-en-directo-seria-un-gran-problema-por-favor-ten-cuidado",
+    "http://localhost:8000/esto-es-un-texto-muy-largo-para-que-no-se-vea-el-access-token-que-en-el-caso-de-que-estes-enseñando-el-navegador-en-directo-seria-un-gran-problema-por-favor-ten-cuidado",
+]
+command = "!colgado"
+```
 In it:
 
-- We enter our bot's client-ID; it's public, so there's no problem sharing it.
+- We enter our bot's client-id; it's public, so there's no problem sharing it.
 
 - Text has been added because when you log in, a token will appear in the URL that **should not be shared with anyone**.
 
