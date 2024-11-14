@@ -1,9 +1,9 @@
 [package]
 include = ["../.env.toml"]
-
 name = "colgado-requests"
 version = "0.1.0"
 edition = "2021"
+
 [dependencies]
 http-body-util = "0.1.2"
 hyper = { version = "1.4.1", features = ["http1", "server"] }

@@ -17,8 +17,11 @@ use iced::{
 pub type ClonableResult<T, E> = Result<T, Arc<E>>;
 pub type LogicResult<T> = ClonableResult<T, ColgadoLogicError>;
 
-pub const FONT: &[u8] = include_bytes!("../../fonts/RobotoMonoNerdFontMono-Regular.ttf").as_slice();
+pub const FONT: &[u8] =
+    include_bytes!("../assets/fonts/RobotoMonoNerdFontMono-Regular.ttf").as_slice();
 pub const TEXT: Font = Font::with_name("RobotoMono Nerd Font Mono");
+
+pub const ICON: &[u8] = include_bytes!("../assets/logo.png");
 
 fn main() -> iced::Result {
     let application = iced::application(
@@ -26,6 +29,12 @@ fn main() -> iced::Result {
         ColgadoApp::update,
         ColgadoApp::view,
     )
+    .window(window::Settings {
+        icon: Some(
+            window::icon::from_file_data(include_bytes!("../assets/logo.png"), None).unwrap(),
+        ),
+        ..Default::default()
+    })
     .default_font(TEXT)
     .font(FONT)
     .subscription(ColgadoApp::subscription)
