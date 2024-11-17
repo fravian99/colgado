@@ -134,6 +134,7 @@ impl TwitchGameActor {
         println!("[actor TwitchGameActor]: Finished");
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct TwitchGameHandle {
     sender: mpsc::UnboundedSender<GeneralMessage>,
@@ -192,7 +193,10 @@ impl TwitchGameHandle {
         let _ = self.sender.send(message);
     }
 
-    pub async fn send_messages(&self, messages: Vec<String>) {
+    pub async fn send_messages<IntoStringIter>(&self, messages: IntoStringIter)
+    where
+        IntoStringIter: IntoIterator<Item = String>,
+    {
         for message in messages {
             self.send_message(message).await;
         }

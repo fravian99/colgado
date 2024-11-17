@@ -67,11 +67,9 @@ impl Game {
     pub fn get_actual_word(&self) -> String {
         let mut string = String::with_capacity(self.characters.len());
         for (i, letter) in self.characters.iter().enumerate() {
-            let show = self.progress.get(i);
-            if let Some(true) = show {
-                string += letter;
-            } else {
-                string += "_";
+            match self.progress.get(i) {
+                Some(true) => string += letter,
+                _ => string += "_",
             }
         }
         string

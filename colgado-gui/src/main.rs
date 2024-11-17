@@ -124,7 +124,7 @@ impl ColgadoApp {
                 }
                 if let State::Playing = self.state {
                     self.state = State::GameCompleted;
-                    return self.send_messages(vec![
+                    return self.send_messages([
                         "Partida terminada".to_string(),
                         format!("La palabra era {}", self.game.word),
                     ]);
@@ -178,7 +178,11 @@ impl ColgadoApp {
         Task::none()
     }
 
-    fn send_messages(&self, words: Vec<String>) -> Task<Message> {
+    fn send_messages<T>(&self, words: T) -> Task<Message>
+    where
+        T: IntoIterator<Item = String> + Send + 'static,
+        <T as IntoIterator>::IntoIter: std::marker::Send,
+    {
         if let Some(handles) = &self.handles {
             let game_handle = handles.game_handle.clone();
             return Task::perform(

@@ -4,28 +4,31 @@ use crate::util;
 
 use rand::distributions::{Alphanumeric, DistString};
 use reqwest::header;
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Deref};
 use tokio::net::TcpListener;
 
-pub async fn get_token(client_id: &str, redirect_urls: &[Box<str>]) -> Result<String, TokenError> {
-    let mut redirect_url: Result<Box<str>, TokenError> = Err(TokenError::InvalidToken);
+pub async fn get_token<T>(client_id: &str, redirect_urls: &[T]) -> Result<String, TokenError>
+where
+    T: Deref<Target = str>,
+{
+    let mut redirect_url: Result<&str, TokenError> = Err(TokenError::InvalidToken);
     let mut listener: Result<TcpListener, TokenError> = Err(TokenError::InvalidToken);
     for url in redirect_urls {
         listener = TcpListener::bind(util::tcp_addres(url).await?)
             .await
             .map_err(|err| TokenError::IoError { err });
         if listener.is_ok() {
-            redirect_url = Ok(url.clone());
+            redirect_url = Ok(url);
             break;
         }
     }
-    let (listener, redirect_url) = (listener?, &redirect_url?);
+    let (listener, redirect_url) = (listener?, redirect_url?);
 
     let state = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
     let auth_url = get_authorization_url(client_id, &state, redirect_url);
     open::that(auth_url)?;
     let hash_map = listen_port(listener).await?;
-    let token: &Vec<String> = match hash_map.get("access_token") {
+    let token: &[String] = match hash_map.get("access_token") {
         Some(token) => token,
         None => return Err(TokenError::InvalidToken),
     };
