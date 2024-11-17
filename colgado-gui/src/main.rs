@@ -1,7 +1,6 @@
 #![windows_subsystem = "windows"]
 use std::sync::Arc;
 
-use colgado_gui::init_flow;
 use colgado_logic::{
     errors::ColgadoLogicError,
     models::{game_view::GameView, handles::Handles},
@@ -151,7 +150,10 @@ impl ColgadoApp {
     }
 
     fn connect(&self) -> Task<Message> {
-        Task::perform(init_flow(), Message::Connected)
+        Task::perform(
+            async { colgado_logic::init_flow().await.map_err(Arc::new) },
+            Message::Connected,
+        )
     }
 
     fn send_new_word(&self) -> Task<Message> {
