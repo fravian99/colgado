@@ -4,7 +4,7 @@ use models::{
     info::{Bot, User},
 };
 
-use requests::send_msg_reqwest;
+use requests::send_msg_request;
 use token_getter::token_flow;
 pub mod errors;
 pub mod models;
@@ -58,6 +58,6 @@ pub async fn send_msg(
     user_id: &str,
     message: &str,
 ) -> Result<(), ColgadoRequestsError> {
-    send_msg_reqwest(bot_info, broadcaster_user_id, user_id, message).await?;
+    send_msg_request(bot_info, broadcaster_user_id, user_id, message).await?;
     Ok(())
 }

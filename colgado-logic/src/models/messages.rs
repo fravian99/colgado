@@ -32,6 +32,7 @@ pub enum TwitchMessage {
     },
     PlayerMessage {
         message_text: String,
+        message_id: String,
         player_id: String,
         player_name: String,
     },
@@ -57,6 +58,9 @@ impl TwitchMessage {
                 let text = &v["payload"]["event"]["message"]["text"];
                 let text = text.as_str().unwrap_or_default().to_owned();
 
+                let message_id = &v["payload"]["event"]["message_id"];
+                let message_id = message_id.as_str().unwrap_or_default().to_owned();
+
                 let player_id = &v["payload"]["event"]["chatter_user_id"];
                 let player_id = player_id.as_str().unwrap_or_default().to_owned();
 
@@ -64,6 +68,7 @@ impl TwitchMessage {
                 let player = player.as_str().unwrap_or_default().to_owned();
                 Self::PlayerMessage {
                     message_text: text,
+                    message_id,
                     player_id,
                     player_name: player,
                 }

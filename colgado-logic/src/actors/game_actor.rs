@@ -25,6 +25,7 @@ impl TwitchGameActor {
         command: String,
     ) -> Self {
         let session_id = OnceCell::<String>::new();
+        let command = command + " ";
         Self {
             receiver,
             session_id,
@@ -40,7 +41,7 @@ impl TwitchGameActor {
             GeneralMessage::CommandMessage(command) => self.handle_command_message(command),
             GeneralMessage::TwitchMessage(message) => self.handle_twitch_message(message).await,
             GeneralMessage::TwitchSendMessage(message) => {
-                let _ = requests::send_msg_reqwest(
+                let _ = requests::send_msg_request(
                     &self.bot_info,
                     &self.user_info.user_id,
                     &self.user_info.user_id,
@@ -67,16 +68,27 @@ impl TwitchGameActor {
             }
             TwitchMessage::PlayerMessage {
                 message_text,
+                message_id,
                 player_id: _,
                 player_name: _,
             } => {
                 if let Some(game) = &mut self.game {
+                    // command includes a space
                     if message_text.contains(&self.command)
-                        && message_text.len() > self.command.len() + 1
+                        && message_text.len() > self.command.len()
                     {
-                        // len = command + space
                         let message_text = &message_text[self.command.len()..];
-                        game.check_word(message_text);
+                        let result = game.check_word(message_text);
+                        if let Err(err) = result {
+                            let _ = requests::send_msg_reply_request(
+                                &self.bot_info,
+                                &self.user_info.user_id,
+                                &self.user_info.user_id,
+                                &message_id,
+                                err.twitch_message_error(),
+                            )
+                            .await;
+                        }
                     }
                 }
             }

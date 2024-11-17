@@ -1,5 +1,7 @@
+use crate::errors::GameError;
 use std::ops::Deref;
 use unicode_segmentation::UnicodeSegmentation;
+
 #[derive(Clone, Debug)]
 pub struct Game {
     characters: Vec<String>,
@@ -25,17 +27,23 @@ impl Game {
         }
     }
 
-    pub fn check_word(&mut self, word: &str) -> usize {
+    pub fn check_word(&mut self, word: &str) -> Result<usize, GameError> {
         let mut num = 0;
-
-        word.graphemes(true).for_each(|word_char| {
+        let word_chars: Vec<&str> = word.graphemes(true).collect();
+        if word_chars.len() > self.characters.len() {
+            return Err(GameError::InvalidWord);
+        }
+        word_chars.iter().for_each(|word_char| {
+            let word_char = *word_char;
             if self.tried.contains(&word_char.into()) {
                 return;
             }
             for (i, character) in self.characters.iter().enumerate() {
-                if self.progress[i] && character.eq_ignore_ascii_case(word_char) {
+                let character: &str = character;
+                if self.progress[i] && character == word_char {
                     break;
-                } else if !self.progress[i] && character.eq_ignore_ascii_case(word_char) {
+                }
+                if character == word_char {
                     self.progress[i] = true;
                     self.cont -= 1;
                     num += 1;
@@ -43,8 +51,9 @@ impl Game {
                     match self.tried.last() {
                         Some(tried) if tried.deref() == word_char => {}
                         _ => {
-                            if !self.characters.contains(&word_char.into()) {
-                                self.tried.push(word_char.into());
+                            let word_char = word_char.into();
+                            if !self.characters.contains(&word_char) {
+                                self.tried.push(word_char);
                             }
                         }
                     }
@@ -52,7 +61,7 @@ impl Game {
             }
         });
 
-        num
+        Ok(num)
     }
 
     pub fn get_actual_word(&self) -> String {
@@ -87,34 +96,41 @@ mod tests {
 
     #[test]
     fn check_word_with_non_ascii_char() {
-        let non_ascii_word_string = "camión".to_string().to_ascii_lowercase();
+        let non_ascii_word_string = "camión".to_owned().to_ascii_lowercase();
         let mut word = Game::new(non_ascii_word_string.clone());
-        println!("{:?}", word.progress);
-        assert_eq!(word.check_word(&non_ascii_word_string), 6);
-        println!("{:?}", word.progress);
+        assert_eq!(word.check_word(&non_ascii_word_string).unwrap(), 6);
 
-        let non_ascii_word_string = "camión".to_string().to_ascii_lowercase();
+        let non_ascii_word_string = "camión".to_owned().to_ascii_lowercase();
         let mut word = Game::new(non_ascii_word_string.clone());
-        println!("{:?}", word.progress);
-        assert_eq!(word.check_word("camió"), 5);
-        println!("{:?}", word.progress);
+        assert_eq!(word.check_word("camió").unwrap(), 5);
 
-        let ascii_word = "camion".to_string();
+        let ascii_word = "camion".to_owned();
         let mut word = Game::new(non_ascii_word_string.clone());
-        assert_eq!(word.check_word(&ascii_word), 5);
+        assert_eq!(word.check_word(&ascii_word).unwrap(), 5);
+
+        let non_ascii_word_string = "aab".to_owned().to_ascii_lowercase();
+        let mut word = Game::new(non_ascii_word_string.clone());
+        assert_eq!(word.check_word("ab").unwrap(), 3);
+    }
+
+    #[test]
+    fn check_word_with_uppercase() {
+        let mut word = Game::new("Prueba".to_owned());
+        word.check_word("prueba").unwrap();
+        assert_eq!(word.get_letters(), "p ");
     }
 
     #[test]
     fn check_correct_letters() {
         let mut word = Game::new("prueba".to_owned());
-        word.check_word("prueba");
+        word.check_word("prueba").unwrap();
         assert_eq!(word.get_letters(), "");
     }
 
     #[test]
     fn check_letters_() {
         let mut word = Game::new("prueba".to_owned());
-        word.check_word("oighqs");
+        word.check_word("oighqs").unwrap();
         let solution = "o i g h q s ";
         assert_eq!(word.get_letters(), solution);
     }
@@ -126,7 +142,7 @@ mod tests {
 
         let mut word = Game::new(input.to_owned());
 
-        assert_eq!(word.check_word(tried), tried.len());
+        assert_eq!(word.check_word(tried).unwrap(), tried.len());
 
         println!("{:?}", word);
         assert!(word.get_letters().is_empty());
