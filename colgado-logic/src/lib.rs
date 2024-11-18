@@ -14,11 +14,10 @@ use models::handles::Handles;
 use tokio::task::JoinHandle;
 use tokio_tungstenite::connect_async;
 
-pub async fn init_flow() -> Result<(Handles, Arc<[JoinHandle<()>]>), ColgadoLogicError> {
+pub async fn init_flow() -> Result<(Handles, Arc<[JoinHandle<()>]>, Box<str>), ColgadoLogicError> {
     let (user, bot_info, command) = colgado_requests::get_token().await?;
-
     let (twitch_game_handle, twitch_game_task) =
-        TwitchGameHandle::new_and_joinhandle(user, bot_info, command);
+        TwitchGameHandle::new_and_joinhandle(user, bot_info, command.clone());
 
     let (ws_stream, _) = connect_async(URL).await.expect("Failed to connect");
     println!("WebSocket handshake has been successfully completed");
@@ -31,5 +30,6 @@ pub async fn init_flow() -> Result<(Handles, Arc<[JoinHandle<()>]>), ColgadoLogi
         game_handle: twitch_game_handle,
     };
     let tasks = vec![twitch_game_task, twitch_message_task];
-    Ok((handles, tasks.into()))
+    let command: Box<str> = command.into();
+    Ok((handles, tasks.into(), command))
 }

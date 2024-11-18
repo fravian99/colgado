@@ -15,6 +15,7 @@ use iced::{
 };
 pub type ClonableResult<T, E> = Result<T, Arc<E>>;
 pub type LogicResult<T> = ClonableResult<T, ColgadoLogicError>;
+type ConnectedTuple = (Handles, Arc<[tokio::task::JoinHandle<()>]>, Box<str>);
 
 pub const FONT: &[u8] =
     include_bytes!("../assets/fonts/RobotoMonoNerdFontMono-Regular.ttf").as_slice();
@@ -46,7 +47,7 @@ fn main() -> iced::Result {
 #[derive(Clone, Debug)]
 pub enum Message {
     NewConnection,
-    Connected(LogicResult<(Handles, Arc<[tokio::task::JoinHandle<()>]>)>),
+    Connected(LogicResult<ConnectedTuple>),
     NewGame,
     NewWord(String),
     WordSetted(String),
@@ -71,6 +72,7 @@ pub struct ColgadoApp {
     state: State,
     tasks: Option<Arc<[tokio::task::JoinHandle<()>]>>,
     handles: Option<Handles>,
+    command: Option<Box<str>>,
 }
 
 impl ColgadoApp {
@@ -94,10 +96,11 @@ impl ColgadoApp {
                         return Task::none();
                     }
                 };
-                let (handles, tasks) = ok_value;
+                let (handles, tasks, command) = ok_value;
                 self.state = State::NewWord;
                 self.handles = Some(handles);
                 self.tasks = Some(tasks);
+                self.command = Some(command);
             }
             Message::NewGame => {
                 self.state = State::NewWord;
@@ -116,7 +119,14 @@ impl ColgadoApp {
                 self.game.word = word;
                 self.game.is_completed = false;
                 self.state = State::Playing;
-                return self.send_message("Comenzando partida".to_string());
+                let message = "Comenzando partida".to_string();
+                return match &self.command {
+                    Some(command) => self.send_messages([
+                        message,
+                        format!("Escribe el comando {} seguido de la palabra", command),
+                    ]),
+                    None => self.send_message(message),
+                };
             }
             Message::GetActualState => {
                 if !self.game.is_completed {
@@ -282,6 +292,7 @@ impl Default for ColgadoApp {
             state: State::NewConnection,
             tasks: None,
             handles: None,
+            command: None,
         }
     }
 }
