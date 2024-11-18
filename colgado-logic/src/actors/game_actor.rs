@@ -74,8 +74,8 @@ impl TwitchGameActor {
             } => {
                 if let Some(game) = &mut self.game {
                     // command includes a space
-                    if message_text[..self.command.len()] == self.command
-                        && message_text.len() > self.command.len()
+                    if message_text.len() > self.command.len()
+                        && message_text[..self.command.len()] == self.command
                     {
                         let message_text = &message_text[self.command.len()..];
                         let result = game.check_word(message_text);
