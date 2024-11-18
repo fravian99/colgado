@@ -286,7 +286,7 @@ impl ColgadoApp {
         if let State::Playing = self.state {
             if !self.closing.load(Ordering::Relaxed) {
                 let closing = self.closing.clone();
-            let game_subscription = iced::time::every(iced::time::Duration::from_millis(10))
+                let game_subscription = iced::time::every(iced::time::Duration::from_millis(10))
                     .map(move |_| {
                         if closing.load(Ordering::Relaxed) {
                             Message::None
@@ -294,8 +294,8 @@ impl ColgadoApp {
                             Message::GetActualState
                         }
                     });
-            subscriptions.push(game_subscription);
-        }
+                subscriptions.push(game_subscription);
+            }
         }
 
         Subscription::batch(subscriptions)
