@@ -1,5 +1,8 @@
 #![windows_subsystem = "windows"]
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 
 use colgado_logic::{
     errors::ColgadoLogicError,
@@ -55,6 +58,7 @@ pub enum Message {
     GetActualState,
     ActualState(Option<GameView>),
     Close(window::Id),
+    None,
 }
 #[derive(Clone, Debug)]
 pub enum State {
@@ -72,6 +76,7 @@ pub struct ColgadoApp {
     state: State,
     tasks: Option<Arc<[tokio::task::JoinHandle<()>]>>,
     handles: Option<Handles>,
+    closing: Arc<AtomicBool>,
     command: Option<Box<str>>,
 }
 
@@ -144,6 +149,7 @@ impl ColgadoApp {
                 self.game = game;
             }
             Message::Close(id) => {
+                self.closing.store(true, Ordering::Relaxed);
                 if let Some(tasks) = &self.tasks {
                     tasks.iter().for_each(|task| {
                         if !task.is_finished() {
@@ -271,13 +277,25 @@ impl ColgadoApp {
 
     pub fn subscription(&self) -> Subscription<Message> {
         let mut subscriptions = Vec::with_capacity(2);
-        let close_event: Subscription<Message> =
-            close_requests().map(|id: window::Id| Message::Close(id));
+        let closing = self.closing.clone();
+        let close_event: Subscription<Message> = close_requests().map(move |id: window::Id| {
+            closing.store(true, Ordering::Relaxed);
+            Message::Close(id)
+        });
         subscriptions.push(close_event);
         if let State::Playing = self.state {
+            if !self.closing.load(Ordering::Relaxed) {
+                let closing = self.closing.clone();
             let game_subscription = iced::time::every(iced::time::Duration::from_millis(10))
-                .map(|_| Message::GetActualState);
+                    .map(move |_| {
+                        if closing.load(Ordering::Relaxed) {
+                            Message::None
+                        } else {
+                            Message::GetActualState
+                        }
+                    });
             subscriptions.push(game_subscription);
+        }
         }
 
         Subscription::batch(subscriptions)
@@ -292,6 +310,7 @@ impl Default for ColgadoApp {
             state: State::NewConnection,
             tasks: None,
             handles: None,
+            closing: Arc::new(AtomicBool::new(false)),
             command: None,
         }
     }
