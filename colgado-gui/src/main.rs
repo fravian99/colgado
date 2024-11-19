@@ -212,8 +212,15 @@ impl ColgadoApp {
     fn get_game(&self) -> Task<Message> {
         if let Some(handles) = &self.handles {
             let game_handle = handles.game_handle.clone();
+            let closing = self.closing.clone();
             return Task::perform(
-                async move { game_handle.get_game_state().await },
+                async move {
+                    if !closing.load(Ordering::Relaxed) {
+                        game_handle.get_game_state().await
+                    } else {
+                        None
+                    }
+                },
                 Message::ActualState,
             );
         }
@@ -277,27 +284,15 @@ impl ColgadoApp {
 
     pub fn subscription(&self) -> Subscription<Message> {
         let mut subscriptions = Vec::with_capacity(2);
-        let closing = self.closing.clone();
-        let close_event: Subscription<Message> = close_requests().map(move |id: window::Id| {
-            closing.store(true, Ordering::Relaxed);
-            Message::Close(id)
-        });
+
+        let close_event: Subscription<Message> =
+            close_requests().map(|id: window::Id| Message::Close(id));
         subscriptions.push(close_event);
         if let State::Playing = self.state {
-            if !self.closing.load(Ordering::Relaxed) {
-                let closing = self.closing.clone();
-                let game_subscription = iced::time::every(iced::time::Duration::from_millis(10))
-                    .map(move |_| {
-                        if closing.load(Ordering::Relaxed) {
-                            Message::None
-                        } else {
-                            Message::GetActualState
-                        }
-                    });
-                subscriptions.push(game_subscription);
-            }
+            let game_subscription = iced::time::every(iced::time::Duration::from_millis(10))
+                .map(|_| Message::GetActualState);
+            subscriptions.push(game_subscription);
         }
-
         Subscription::batch(subscriptions)
     }
 }
