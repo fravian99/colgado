@@ -194,10 +194,10 @@ impl ColgadoApp {
         Task::none()
     }
 
-    fn send_messages<T>(&self, words: T) -> Task<Message>
+    fn send_messages<T, I>(&self, words: T) -> Task<Message>
     where
-        T: IntoIterator<Item = String> + Send + 'static,
-        <T as IntoIterator>::IntoIter: std::marker::Send,
+        T: IntoIterator<Item = String, IntoIter = I> + Send + 'static,
+        I: Send,
     {
         if let Some(handles) = &self.handles {
             let game_handle = handles.game_handle.clone();

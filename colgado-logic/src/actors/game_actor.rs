@@ -72,13 +72,11 @@ impl TwitchGameActor {
                 player_id: _,
                 player_name: _,
             } => {
-                if let Some(game) = &mut self.game {
-                    // command includes a space
-                    if message_text.len() > self.command.len()
-                        && message_text[..self.command.len()] == self.command
-                    {
-                        let message_text = &message_text[self.command.len()..];
-                        let result = game.check_word(message_text);
+                if self.game.is_some() {
+                    let message_text: &str = &message_text;
+                    let word_chars = self.valid_player_message(message_text);
+                    if let (Some(word_chars), Some(game)) = (word_chars, &mut self.game) {
+                        let result = game.check_word_chars(&word_chars);
                         if let Err(err) = result {
                             let _ = requests::send_msg_reply_request(
                                 &self.bot_info,
@@ -96,6 +94,24 @@ impl TwitchGameActor {
             _ => {}
         }
         true
+    }
+
+    fn valid_player_message<'a>(&self, mut message_text: &'a str) -> Option<Vec<&'a str>> {
+        if message_text.is_empty() {
+            return None;
+        }
+        // command includes a space
+        let command_included = message_text.len() > self.command.len()
+            && message_text[..self.command.len()] == self.command;
+        if command_included {
+            message_text = &message_text[self.command.len()..];
+        }
+        let word_chars: Vec<&str> = Game::split_chars(message_text);
+        if command_included || word_chars.len() == 1 {
+            Some(word_chars)
+        } else {
+            None
+        }
     }
 
     fn handle_command_message(&mut self, message: CommandMessage) -> bool {

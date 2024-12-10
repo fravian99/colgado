@@ -27,9 +27,12 @@ impl Game {
         }
     }
 
-    pub fn check_word(&mut self, word: &str) -> Result<usize, GameError> {
+    pub fn split_chars(word: &str) -> Vec<&str> {
+        UnicodeSegmentation::graphemes(word, true).collect()
+    }
+
+    pub fn check_word_chars(&mut self, word_chars: &[&str]) -> Result<usize, GameError> {
         let mut num = 0;
-        let word_chars: Vec<&str> = word.graphemes(true).collect();
         if word_chars.len() > self.characters.len() {
             return Err(GameError::InvalidWord);
         }
@@ -60,7 +63,6 @@ impl Game {
                 }
             }
         });
-
         Ok(num)
     }
 
@@ -76,13 +78,19 @@ impl Game {
     }
 
     pub fn get_letters(&self) -> String {
-        let mut string = String::with_capacity(self.characters.len());
+        let size = if !self.tried.is_empty() {
+            2 * self.tried.len()
+        } else {
+            1
+        };
+        let mut string = String::with_capacity(size);
         self.tried.iter().for_each(|letter| {
             string += letter;
             string += " ";
         });
         string
     }
+
     pub fn is_completed(&self) -> bool {
         self.cont == 0
     }
@@ -94,41 +102,36 @@ mod tests {
 
     #[test]
     fn check_word_with_non_ascii_char() {
-        let non_ascii_word_string = "camión".to_owned().to_ascii_lowercase();
-        let mut word = Game::new(non_ascii_word_string.clone());
-        assert_eq!(word.check_word(&non_ascii_word_string).unwrap(), 6);
+        let test_closure = |word: &str, input: &str, expected: usize| {
+            let non_ascii_word_string = word.to_owned().to_ascii_lowercase();
+            let mut game = Game::new(non_ascii_word_string.clone());
+            let input = Game::split_chars(input);
+            assert_eq!(game.check_word_chars(&input).unwrap(), expected);
+        };
 
-        let non_ascii_word_string = "camión".to_owned().to_ascii_lowercase();
-        let mut word = Game::new(non_ascii_word_string.clone());
-        assert_eq!(word.check_word("camió").unwrap(), 5);
-
-        let ascii_word = "camion".to_owned();
-        let mut word = Game::new(non_ascii_word_string.clone());
-        assert_eq!(word.check_word(&ascii_word).unwrap(), 5);
-
-        let non_ascii_word_string = "aab".to_owned().to_ascii_lowercase();
-        let mut word = Game::new(non_ascii_word_string.clone());
-        assert_eq!(word.check_word("ab").unwrap(), 3);
+        test_closure("camión", "camión", 6);
+        test_closure("camión", "camió", 5);
+        test_closure("aab", "ab", 3);
     }
 
     #[test]
     fn check_word_with_uppercase() {
         let mut word = Game::new("Prueba".to_owned());
-        word.check_word("prueba").unwrap();
+        word.check_word_chars(&Game::split_chars("prueba")).unwrap();
         assert_eq!(word.get_letters(), "p ");
     }
 
     #[test]
     fn check_correct_letters() {
         let mut word = Game::new("prueba".to_owned());
-        word.check_word("prueba").unwrap();
+        word.check_word_chars(&Game::split_chars("prueba")).unwrap();
         assert_eq!(word.get_letters(), "");
     }
 
     #[test]
-    fn check_letters_() {
+    fn check_letters() {
         let mut word = Game::new("prueba".to_owned());
-        word.check_word("oighqs").unwrap();
+        word.check_word_chars(&Game::split_chars("oighqs")).unwrap();
         let solution = "o i g h q s ";
         assert_eq!(word.get_letters(), solution);
     }
@@ -140,7 +143,10 @@ mod tests {
 
         let mut word = Game::new(input.to_owned());
 
-        assert_eq!(word.check_word(tried).unwrap(), tried.len());
+        assert_eq!(
+            word.check_word_chars(&Game::split_chars(tried)).unwrap(),
+            tried.len()
+        );
 
         println!("{:?}", word);
         assert!(word.get_letters().is_empty());
