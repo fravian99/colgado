@@ -124,14 +124,15 @@ impl ColgadoApp {
                 self.game.word = word;
                 self.game.is_completed = false;
                 self.state = State::Playing;
-                let message = "Comenzando partida".to_string();
-                return match &self.command {
-                    Some(command) => self.send_messages([
-                        message,
-                        format!("Escribe el comando {} seguido de la palabra", command),
-                    ]),
-                    None => self.send_message(message),
+                let message = "Comenzando partida";
+                let message = match &self.command {
+                    Some(command) =>
+                        format!("{}, escribe el comando {} seguido de la palabra (Si solo es una letra puedes omitir el comando)",
+                            message, command
+                        ),
+                    None => message.to_string(),
                 };
+                return self.send_message(message);
             }
             Message::GetActualState => {
                 if !self.game.is_completed {
@@ -139,10 +140,9 @@ impl ColgadoApp {
                 }
                 if let State::Playing = self.state {
                     self.state = State::GameCompleted;
-                    return self.send_messages([
-                        "Partida terminada".to_string(),
-                        format!("La palabra era {}", self.game.word),
-                    ]);
+                    let message = "Partida terminada";
+                    return self
+                        .send_message(format!("{}, la palabra era {}", message, self.game.word));
                 }
             }
             Message::ActualState(Some(game)) => {
@@ -194,6 +194,7 @@ impl ColgadoApp {
         Task::none()
     }
 
+    #[allow(dead_code)]
     fn send_messages<T, I>(&self, words: T) -> Task<Message>
     where
         T: IntoIterator<Item = String, IntoIter = I> + Send + 'static,
