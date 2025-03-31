@@ -156,7 +156,6 @@ impl ColgadoApp {
                             task.abort();
                         }
                     });
-                    println!("all aborted");
                 }
                 return window::close::<Message>(id);
             }
