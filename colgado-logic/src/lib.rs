@@ -8,14 +8,21 @@ use std::sync::Arc;
 use crate::actors::game_actor::TwitchGameHandle;
 use crate::actors::message_actor::TwitchMessageHandle;
 
-use colgado_requests::URL;
 use errors::ColgadoLogicError;
 use models::handles::Handles;
 use tokio::task::JoinHandle;
 use tokio_tungstenite::connect_async;
+use trequests::{errors::TRequestsError, open_file, URL};
+
+const FILE: &str = "env.toml";
 
 pub async fn init_flow() -> Result<(Handles, Arc<[JoinHandle<()>]>, Box<str>), ColgadoLogicError> {
-    let (user, bot_info, command) = colgado_requests::get_token().await?;
+    let file_variables = open_file(FILE)
+        .await
+        .map_err(|err| TRequestsError::VarError { err })?;
+    let (user, bot_info) = trequests::get_token(&file_variables).await?;
+    let command = file_variables.command;
+
     let (twitch_game_handle, twitch_game_task) =
         TwitchGameHandle::new_and_joinhandle(user, bot_info, command.clone());
 

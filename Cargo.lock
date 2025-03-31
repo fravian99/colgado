@@ -549,33 +549,15 @@ dependencies = [
 name = "colgado-logic"
 version = "0.2.0"
 dependencies = [
- "colgado-requests",
  "futures-channel",
  "futures-util",
  "serde_json",
  "thiserror 2.0.3",
  "tokio",
  "tokio-tungstenite",
+ "trequests",
  "tungstenite 0.24.0",
  "unicode-segmentation",
-]
-
-[[package]]
-name = "colgado-requests"
-version = "0.2.0"
-dependencies = [
- "http-body-util",
- "hyper",
- "hyper-util",
- "open",
- "rand",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "toml",
- "url",
 ]
 
 [[package]]
@@ -4034,6 +4016,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c06d3da6113f116aaee68e4d601191614c9053067f9ab7f6edbcb161237daa54"
 dependencies = [
  "once_cell",
+]
+
+[[package]]
+name = "trequests"
+version = "0.2.0"
+source = "git+https://github.com/fravian99/trequests.git#e68656a376a488b3c60007f331203d59b13edc65"
+dependencies = [
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "open",
+ "rand",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "toml",
+ "url",
 ]
 
 [[package]]

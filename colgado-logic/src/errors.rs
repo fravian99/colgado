@@ -5,7 +5,7 @@ pub enum ColgadoLogicError {
     #[error("{}", err)]
     RequestError {
         #[from]
-        err: colgado_requests::errors::ColgadoRequestsError,
+        err: trequests::errors::TRequestsError,
     },
 }
 

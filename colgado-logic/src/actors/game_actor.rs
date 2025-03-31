@@ -1,9 +1,9 @@
 use crate::word::Game;
 use std::cell::OnceCell;
 
-use colgado_requests::models::info;
-use colgado_requests::requests;
 use tokio::sync::{mpsc, oneshot};
+use trequests::models::info;
+use trequests::requests;
 
 use super::models::game_view::GameView;
 use super::models::messages::{CommandMessage, GeneralMessage, TwitchMessage};
@@ -56,7 +56,7 @@ impl TwitchGameActor {
     async fn handle_twitch_message(&mut self, message: TwitchMessage) -> bool {
         match message {
             TwitchMessage::WelcomeMessage { session_id } => {
-                colgado_requests::subscribe_to_wb(
+                trequests::subscribe_to_wb(
                     &self.bot_info,
                     &session_id,
                     &self.user_info.user_id,
