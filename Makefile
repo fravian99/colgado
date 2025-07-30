@@ -17,7 +17,7 @@ debug-linux:
 	cargo build
 
 doc:
-	cargo doc
+	cargo doc --document-private-items
 
 start-server:
 	twitch-cli event websocket start-server
