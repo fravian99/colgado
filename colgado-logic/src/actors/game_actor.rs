@@ -67,7 +67,9 @@ impl TwitchGameActor {
                 message_id,
                 ..
             } => {
-                let word_chars = if self.game.is_some() {
+                let word_chars = if let Some(game) = &self.game
+                    && !game.is_completed()
+                {
                     self.valid_player_message(&message_text)
                 } else {
                     None
