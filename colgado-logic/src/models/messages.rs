@@ -49,8 +49,8 @@ pub enum TwitchMessage {
 }
 
 impl TwitchMessage {
-    fn from_message_text(value: String) -> Self {
-        let v: Value = serde_json::from_str(&value).expect("Error deserializing message");
+    fn from_message_text(value: &str) -> Self {
+        let v: Value = serde_json::from_str(value).expect("Error deserializing message");
         let message_type = &v["metadata"]["message_type"];
         let message_type = message_type.as_str();
         match message_type {
@@ -81,7 +81,8 @@ impl TwitchMessage {
             Some("session_keepalive") => Self::None,
             Some(message_type) => {
                 println!("[WARNING] Type not handled {}", message_type);
-                Self::OtherText { text: value }
+                let text = value.to_owned();
+                Self::OtherText { text }
             }
             None => Self::None,
         }
@@ -91,7 +92,7 @@ impl TwitchMessage {
 impl From<Message> for TwitchMessage {
     fn from(value: Message) -> Self {
         let message: Self = match value {
-            Message::Text(msg_text) => Self::from_message_text(msg_text),
+            Message::Text(msg_text) => Self::from_message_text(&msg_text),
             _ => Self::Other { mesage: value },
         };
         message
