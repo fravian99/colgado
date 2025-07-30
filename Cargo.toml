@@ -1,3 +1,3 @@
 [workspace]
-members = ["colgado-gui", "colgado-logic"]
+members = ["colgado-gui", "colgado-logic", "trequests"]
 resolver = "2"

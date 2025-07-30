@@ -12,7 +12,11 @@ use errors::ColgadoLogicError;
 use models::handles::Handles;
 use tokio::task::JoinHandle;
 use tokio_tungstenite::connect_async;
-use trequests::{errors::TRequestsError, open_file, URL};
+use trequests::{
+    errors::TRequestsError,
+    models::{file_variables::FileVariables, scope::Scope},
+    open_file, URL,
+};
 
 const FILE: &str = "env.toml";
 
@@ -20,7 +24,16 @@ pub async fn init_flow() -> Result<(Handles, Arc<[JoinHandle<()>]>, Box<str>), C
     let file_variables = open_file(FILE)
         .await
         .map_err(|err| TRequestsError::VarError { err })?;
-    let (user, bot_info) = trequests::get_token(&file_variables).await?;
+
+    let FileVariables {
+        client_id,
+        redirect_urls,
+        ..
+    } = file_variables;
+
+    let scopes = &[Scope::UserReadChat, Scope::UserWriteChat];
+
+    let (user, bot_info) = trequests::get_token(client_id, &redirect_urls, scopes).await?;
     let command = file_variables.command;
 
     let (twitch_game_handle, twitch_game_task) =

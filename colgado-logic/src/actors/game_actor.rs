@@ -3,7 +3,7 @@ use std::cell::OnceCell;
 
 use tokio::sync::{mpsc, oneshot};
 use trequests::models::info;
-use trequests::requests;
+use trequests::models::requests::send_msg_request::SendMsgRequest;
 
 use super::models::game_view::GameView;
 use super::models::messages::{CommandMessage, GeneralMessage, TwitchMessage};
@@ -41,52 +41,47 @@ impl TwitchGameActor {
             GeneralMessage::CommandMessage(command) => self.handle_command_message(command),
             GeneralMessage::TwitchMessage(message) => self.handle_twitch_message(message).await,
             GeneralMessage::TwitchSendMessage(message) => {
-                let _ = requests::send_msg_request(
-                    &self.bot_info,
-                    &self.user_info.user_id,
-                    &self.user_info.user_id,
-                    &message,
-                )
-                .await;
+                let user_id = &self.user_info.user_id;
+                SendMsgRequest::new(user_id, user_id, &message)
+                    .bot_name("Colgado")
+                    .send(&self.bot_info)
+                    .await
+                    .expect("Error sending message");
+
                 true
             }
         }
     }
 
     async fn handle_twitch_message(&mut self, message: TwitchMessage) -> bool {
+        let user_id = &self.user_info.user_id;
         match message {
             TwitchMessage::WelcomeMessage { session_id } => {
-                trequests::subscribe_to_wb(
-                    &self.bot_info,
-                    &session_id,
-                    &self.user_info.user_id,
-                    &self.user_info.user_id,
-                )
-                .await
-                .expect("Error suscribing to channel");
-                self.session_id.set(session_id).expect("Error setting id")
+                trequests::subscribe_to_wb(&self.bot_info, &session_id, user_id, user_id)
+                    .await
+                    .expect("Error suscribing to channel");
+                self.session_id.set(session_id).expect("Error setting id");
             }
             TwitchMessage::PlayerMessage {
                 message_text,
                 message_id,
-                player_id: _,
-                player_name: _,
+                ..
             } => {
-                if self.game.is_some() {
-                    let message_text: &str = &message_text;
-                    let word_chars = self.valid_player_message(message_text);
-                    if let (Some(word_chars), Some(game)) = (word_chars, &mut self.game) {
-                        let result = game.check_word_chars(&word_chars);
-                        if let Err(err) = result {
-                            let _ = requests::send_msg_reply_request(
-                                &self.bot_info,
-                                &self.user_info.user_id,
-                                &self.user_info.user_id,
-                                &message_id,
-                                err.twitch_message_error(),
-                            )
-                            .await;
-                        }
+                let word_chars = if self.game.is_some() {
+                    self.valid_player_message(&message_text)
+                } else {
+                    None
+                };
+                if let (Some(word_chars), Some(game)) = (word_chars, &mut self.game) {
+                    let result = game.check_word_chars(&word_chars);
+                    if let Err(err) = result {
+                        let game_error = err.twitch_message_error();
+                        SendMsgRequest::new(user_id, user_id, game_error)
+                            .reply_to(&message_id)
+                            .bot_name("Colgado")
+                            .send(&self.bot_info)
+                            .await
+                            .expect("Error sending message to player");
                     }
                 }
             }
@@ -106,7 +101,7 @@ impl TwitchGameActor {
         if command_included {
             message_text = &message_text[self.command.len()..];
         }
-        let word_chars: Vec<&str> = Game::split_chars(message_text);
+        let word_chars = Game::split_chars(message_text);
         if command_included || word_chars.len() == 1 {
             Some(word_chars)
         } else {

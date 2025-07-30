@@ -1,0 +1,3 @@
+[submodule "trequests"]
+	path = trequests
+	url = https://github.com/fravian99/trequests
