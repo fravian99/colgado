@@ -148,7 +148,7 @@ mod tests {
             tried.len()
         );
 
-        println!("{:?}", word);
+        println!("{word:?}");
         assert!(word.get_letters().is_empty());
         assert!(word.is_completed());
     }

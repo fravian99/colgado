@@ -80,7 +80,7 @@ impl TwitchMessage {
             }
             Some("session_keepalive") => Self::None,
             Some(message_type) => {
-                println!("[WARNING] Type not handled {}", message_type);
+                println!("[WARNING] Type not handled {message_type}");
                 let text = value.to_owned();
                 Self::OtherText { text }
             }
