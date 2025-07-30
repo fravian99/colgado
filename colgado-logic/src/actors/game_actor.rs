@@ -46,7 +46,7 @@ impl TwitchGameActor {
                     .bot_name("Colgado")
                     .send(&self.bot_info)
                     .await
-                    .expect("Error sending message");
+                    .expect("Error sending message: {message}");
 
                 true
             }

@@ -97,7 +97,7 @@ impl ColgadoApp {
                 let ok_value = match result {
                     Ok(value) => value,
                     Err(err) => {
-                        eprintln!("{}", err);
+                        eprintln!("{err}");
                         self.state = State::NewConnection;
                         return Task::none();
                     }
@@ -128,8 +128,7 @@ impl ColgadoApp {
                 let message = "Comenzando partida";
                 let message = match &self.command {
                     Some(command) =>
-                        format!("{}, escribe el comando {} seguido de la palabra (Si solo es una letra puedes omitir el comando)",
-                            message, command
+                        format!("{message}, escribe el comando {command} seguido de la palabra (Si solo es una letra puedes omitir el comando)"
                         ),
                     None => message.to_string(),
                 };
