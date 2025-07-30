@@ -14,7 +14,7 @@ use iced::{
     Alignment::Center,
     Element, Font,
     Length::Fill,
-    Subscription, Task,
+    Subscription, Task, Theme,
 };
 pub type ClonableResult<T, E> = Result<T, Arc<E>>;
 pub type LogicResult<T> = ClonableResult<T, ColgadoLogicError>;
@@ -40,6 +40,7 @@ fn main() -> iced::Result {
     })
     .default_font(TEXT)
     .font(FONT)
+    .theme(|_| system_theme_mode())
     .subscription(ColgadoApp::subscription)
     .antialiasing(true)
     .centered()
@@ -308,5 +309,12 @@ impl Default for ColgadoApp {
             closing: Arc::new(AtomicBool::new(false)),
             command: None,
         }
+    }
+}
+
+fn system_theme_mode() -> Theme {
+    match dark_light::detect().unwrap_or(dark_light::Mode::Unspecified) {
+        dark_light::Mode::Light | dark_light::Mode::Unspecified => Theme::Light,
+        dark_light::Mode::Dark => Theme::Dark,
     }
 }
