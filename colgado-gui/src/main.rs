@@ -72,13 +72,13 @@ pub enum State {
 }
 #[derive(Clone, Debug)]
 pub struct ColgadoApp {
-    title: &'static str,
     game: GameView,
     state: State,
     tasks: Option<Arc<[tokio::task::JoinHandle<()>]>>,
     handles: Option<Handles>,
     closing: Arc<AtomicBool>,
     command: Option<Box<str>>,
+    view: ColgadoView,
 }
 
 impl ColgadoApp {
@@ -228,58 +228,7 @@ impl ColgadoApp {
     }
 
     pub fn view(&self) -> Element<Message> {
-        let title = text(self.title).font(TEXT).size(30);
-        let title = row![title];
-        let mut view = match self.state {
-            State::NewConnection | State::Connecting => self.new_connection_view(),
-            State::NewWord | State::SettingGame => self.new_word_view(),
-            State::Playing | State::GameCompleted => self.playing_view(),
-        };
-
-        view = view.max_width(600);
-        view = column![title, view].spacing(40).align_x(Center).width(Fill);
-        let view = center(view);
-        widget::container(view).into()
-    }
-
-    fn new_connection_view(&self) -> Column<Message> {
-        let mut button = button(text("Conectar"));
-        button = if let State::NewConnection = self.state {
-            button.on_press(Message::NewConnection)
-        } else {
-            button
-        };
-        column![button].width(Fill).align_x(Center)
-    }
-
-    fn new_word_view(&self) -> Column<Message> {
-        let mut send_button = button(text("Jugar"));
-        send_button = if let State::NewWord = self.state {
-            send_button.on_press(Message::SubmitWord)
-        } else {
-            send_button
-        };
-        let word_input = column![
-            text("Introduce una palabra:"),
-            row![
-                text_input("Palabra", &self.game.word).on_input(Message::NewWord),
-                send_button,
-            ]
-        ];
-        column![word_input].width(Fill).align_x(Center)
-    }
-
-    fn playing_view(&self) -> Column<Message> {
-        let text_input = text(&self.game.word);
-        let word_input = column![text_input.size(40)];
-        let letters = column![text(&self.game.letters).size(40)];
-        let mut column = column![word_input, letters].spacing(10);
-
-        if let State::GameCompleted = &self.state {
-            let button = button(text("Nueva partida")).on_press(Message::NewGame);
-            column = column.push(button);
-        }
-        column.width(Fill).align_x(Center)
+        self.view.view(self)
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
@@ -299,14 +248,15 @@ impl ColgadoApp {
 
 impl Default for ColgadoApp {
     fn default() -> Self {
+        let title = "El que tengo aquí colgado";
         Self {
-            title: "El que tengo aquí colgado",
             game: GameView::default(),
             state: State::NewConnection,
             tasks: None,
             handles: None,
             closing: Arc::new(AtomicBool::new(false)),
             command: None,
+            view: ColgadoView::new(title),
         }
     }
 }
@@ -315,5 +265,74 @@ fn system_theme_mode() -> Theme {
     match dark_light::detect().unwrap_or(dark_light::Mode::Unspecified) {
         dark_light::Mode::Light | dark_light::Mode::Unspecified => Theme::Light,
         dark_light::Mode::Dark => Theme::Dark,
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ColgadoView {
+    title: &'static str,
+}
+
+impl ColgadoView {
+    pub fn new(title: &'static str) -> Self {
+        ColgadoView { title }
+    }
+
+    pub fn view<'a>(&'a self, colgado_app: &'a ColgadoApp) -> Element<'a, Message> {
+        let game = &colgado_app.game;
+        let state = &colgado_app.state;
+        let title = self.title;
+        let title = text(title).font(TEXT).size(30);
+        let title = row![title];
+        let mut view = match state {
+            State::NewConnection | State::Connecting => self.new_connection_view(state),
+            State::NewWord | State::SettingGame => self.new_word_view(game, state),
+            State::Playing | State::GameCompleted => self.playing_view(game, state),
+        };
+
+        view = view.max_width(600);
+        view = column![title, view].spacing(40).align_x(Center).width(Fill);
+        let view = center(view);
+        widget::container(view).into()
+    }
+
+    fn new_connection_view(&self, state: &State) -> Column<Message> {
+        let mut button = button(text("Conectar"));
+        button = if let State::NewConnection = state {
+            button.on_press(Message::NewConnection)
+        } else {
+            button
+        };
+        column![button].width(Fill).align_x(Center)
+    }
+
+    fn new_word_view(&self, game: &GameView, state: &State) -> Column<Message> {
+        let mut send_button = button(text("Jugar"));
+        send_button = if let State::NewWord = state {
+            send_button.on_press(Message::SubmitWord)
+        } else {
+            send_button
+        };
+        let word_input = column![
+            text("Introduce una palabra:"),
+            row![
+                text_input("Palabra", &game.word).on_input(Message::NewWord),
+                send_button,
+            ]
+        ];
+        column![word_input].width(Fill).align_x(Center)
+    }
+
+    fn playing_view<'a>(&'a self, game: &'a GameView, state: &State) -> Column<'a, Message> {
+        let text_input = text(&game.word);
+        let word_input = column![text_input.size(40)];
+        let letters = column![text(&game.letters).size(40)];
+        let mut column = column![word_input, letters].spacing(10);
+
+        if let State::GameCompleted = state {
+            let button = button(text("Nueva partida")).on_press(Message::NewGame);
+            column = column.push(button);
+        }
+        column.width(Fill).align_x(Center)
     }
 }

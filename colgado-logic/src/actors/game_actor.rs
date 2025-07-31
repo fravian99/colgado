@@ -118,13 +118,7 @@ impl TwitchGameActor {
                 let _ = sender.send(id);
             }
             CommandMessage::GetGameState { sender } => {
-                let game_view = match &self.game {
-                    Some(game) => {
-                        let game_view = GameView::from(game);
-                        Some(game_view)
-                    }
-                    None => None,
-                };
+                let game_view: Option<GameView> = self.game.as_ref().map(GameView::from);
                 let _ = sender.send(game_view);
             }
             CommandMessage::SetGameWord { word, sender } => {
