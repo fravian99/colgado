@@ -1,9 +1,13 @@
 #![windows_subsystem = "windows"]
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
+use std::{
+    future::Future,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 
+use colgado_gui::tasks::TaskBuider;
 use colgado_logic::{
     errors::ColgadoLogicError,
     models::{game_view::GameView, handles::Handles},
@@ -16,6 +20,7 @@ use iced::{
     Length::Fill,
     Subscription, Task, Theme,
 };
+use iced_futures::MaybeSend;
 pub type ClonableResult<T, E> = Result<T, Arc<E>>;
 pub type LogicResult<T> = ClonableResult<T, ColgadoLogicError>;
 type ConnectedTuple = (Handles, Arc<[tokio::task::JoinHandle<()>]>, Box<str>);
@@ -165,32 +170,34 @@ impl ColgadoApp {
     }
 
     fn connect(&self) -> Task<Message> {
-        Task::perform(
-            async { colgado_logic::init_flow().await.map_err(Arc::new) },
-            Message::Connected,
-        )
+        let closure = async { colgado_logic::init_flow().await };
+        let mapping = Message::Connected;
+        TaskBuider::default()
+            .set_closure(closure)
+            .set_mapping(mapping)
+            .err_to_arc()
+            .perform()
     }
 
     fn send_new_word(&self) -> Task<Message> {
-        if let Some(handles) = &self.handles {
+        let handle_closure = |handles: &Handles| {
             let game_handle = handles.game_handle.clone();
-            let word = self.game.word.clone();
-            return Task::perform(
-                async move { game_handle.set_game_word(word).await },
-                Message::WordSetted,
-            );
-        }
-        Task::none()
+            let word = self.game.word.to_owned();
+            async move { game_handle.set_game_word(word).await }
+        };
+        let mapping = Message::WordSetted;
+
+        self.create_task(handle_closure, mapping).perform()
     }
 
     fn send_message(&self, word: String) -> Task<Message> {
-        if let Some(handles) = &self.handles {
+        let handle_closure = |handles: &Handles| {
             let game_handle = handles.game_handle.clone();
-            return Task::perform(async move { game_handle.send_message(word).await }, |_| {
-                Message::GetActualState
-            });
-        }
-        Task::none()
+            async move { game_handle.send_message(word).await }
+        };
+        let mapping = |_| Message::GetActualState;
+
+        self.create_task(handle_closure, mapping).perform()
     }
 
     #[allow(dead_code)]
@@ -199,32 +206,44 @@ impl ColgadoApp {
         T: IntoIterator<Item = String, IntoIter = I> + Send + 'static,
         I: Send,
     {
-        if let Some(handles) = &self.handles {
+        let handle_closure = |handles: &Handles| {
             let game_handle = handles.game_handle.clone();
-            return Task::perform(
-                async move { game_handle.send_messages(words).await },
-                |_| Message::GetActualState,
-            );
-        }
-        Task::none()
+            async move { game_handle.send_messages(words).await }
+        };
+        let mapping = |_| Message::GetActualState;
+
+        self.create_task(handle_closure, mapping).perform()
     }
 
     fn get_game(&self) -> Task<Message> {
-        if let Some(handles) = &self.handles {
+        let handle_closure = |handles: &Handles| {
             let game_handle = handles.game_handle.clone();
             let closing = self.closing.clone();
-            return Task::perform(
-                async move {
-                    if !closing.load(Ordering::Relaxed) {
-                        game_handle.get_game_state().await
-                    } else {
-                        None
-                    }
-                },
-                Message::ActualState,
-            );
-        }
-        Task::none()
+            async move {
+                if !closing.load(Ordering::Relaxed) {
+                    game_handle.get_game_state().await
+                } else {
+                    None
+                }
+            }
+        };
+        let mapping = Message::ActualState;
+
+        self.create_task(handle_closure, mapping).perform()
+    }
+
+    fn create_task<T, E, F, H, M>(&self, handle_closure: H, mapping: M) -> TaskBuider<F, M>
+    where
+        T: MaybeSend + 'static,
+        E: MaybeSend + 'static,
+        H: FnOnce(&Handles) -> F,
+        M: Fn(E) -> Message + MaybeSend + 'static,
+        F: Future<Output = T> + MaybeSend + 'static,
+    {
+        let closure = self.handles.as_ref().map(handle_closure);
+        TaskBuider::default()
+            .set_closure_option(closure)
+            .set_mapping(mapping)
     }
 
     pub fn view(&self) -> Element<Message> {
